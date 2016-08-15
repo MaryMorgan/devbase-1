@@ -28,9 +28,12 @@ begin
 	readln();
 	clrscr;
 	
+	randomize();
+	writeln('Нажмите любую клавишу чтобы остановить');
 	while not keypressed do
 	begin
-		writeln('lalala');
+		i:= random(67);
+		writeln('lalala ', i);
 		delay(500);		
 	end;
 

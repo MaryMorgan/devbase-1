@@ -4,6 +4,7 @@ interface
 	procedure SetTitle(title: pchar);
 	
 	procedure TextColor(col: integer; bkCol: integer);
+	procedure TextColor(col: integer);
 	procedure GotoXY(x: shortint; y: shortint);
 	procedure ClrScr();	
 	procedure Delay(ms: integer);
@@ -87,12 +88,48 @@ begin
 	SetConsoleTitleW(pWideChar(newTitle));
 end;
 
+procedure TextColor(col: integer);
+var
+	fullcol: integer;
+	csbi: CONSOLE_SCREEN_BUFFER_INFO;
+	HConsole: LongWord;
+	newAttributes : word;
+begin
+
+	HConsole := GetStdHandle(STD_OUTPUT_HANDLE);
+
+	if not GetConsoleScreenBufferInfo(HConsole, csbi) then
+		exit;
+
+	fullcol := (col mod 16);
+
+	newAttributes := csbi.wAttributes;
+	newAttributes := newAttributes and $fff0;
+	newAttributes := newAttributes + fullcol;
+	
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), newAttributes);
+end;
+
 procedure textcolor(col: integer; bkCol: integer);
 var
 	fullcol: integer;
+	csbi: CONSOLE_SCREEN_BUFFER_INFO;
+	HConsole: LongWord;
+	newAttributes : word;
 begin
+
+	HConsole := GetStdHandle(STD_OUTPUT_HANDLE);
+
+	if not GetConsoleScreenBufferInfo(HConsole, csbi) then
+		exit;
+
 	fullcol := (bkCol mod 16) * 16 + (col mod 16);
-	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), fullcol);	
+
+	newAttributes := csbi.wAttributes;
+	newAttributes := newAttributes and $ff00;
+	newAttributes := newAttributes + fullcol;
+	
+	SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), newAttributes);
 end;
 
 procedure GotoXY(x: shortint; y: shortint);
@@ -107,26 +144,38 @@ end;
 procedure clrscr();
 var
 	coord: TCoord;
+	csbi: CONSOLE_SCREEN_BUFFER_INFO;
+	CharsFilled: LongWord;
+	CharsToFill: LongWord;
+	HConsole: LongWord;
 begin
+	HConsole := GetStdHandle(STD_OUTPUT_HANDLE);
+
 	coord.x := 0;
 	coord.y := 0;
 
+	if not GetConsoleScreenBufferInfo(HConsole, csbi) then
+		exit;
+
+	CharsToFill := csbi.dwSize.X * csbi.dwSize.Y;
+
 	FillConsoleOutputCharacter(
-		GetStdHandle(STD_OUTPUT_HANDLE),
+		HConsole,
 		' ',
-		80*25,
+		CharsToFill,
 		coord,
-		nil
+		CharsFilled
 		);
 
 	FillConsoleOutputAttribute(
-		GetStdHandle(STD_OUTPUT_HANDLE),
-		7,
-		80*25,
+		HConsole,
+		csbi.wAttributes,
+		CharsToFill,
 		coord,
-		nil
+		CharsFilled
 		);
-	GotoXY(0,0);
+
+	SetConsoleCursorPosition( HConsole, coord );
 end;
 
 function readkey(): Shortint;
